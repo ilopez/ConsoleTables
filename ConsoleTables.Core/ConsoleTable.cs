@@ -7,6 +7,8 @@ namespace ConsoleTables.Core
 {
     public class ConsoleTable
     {
+        public bool AddRowDivider = true;
+        public bool ShowCount = true;
         public IList<object> Columns { get; protected set; }
         public IList<object[]> Rows { get; protected set; }
 
@@ -84,18 +86,29 @@ namespace ConsoleTables.Core
             // create the divider
             var divider = " " + string.Join("", Enumerable.Repeat("-", longestLine - 1)) + " ";
 
-            builder.AppendLine(divider);
+            if (AddRowDivider)
+            {
+                builder.AppendLine(divider);
+            }
             builder.AppendLine(columnHeaders);
 
             foreach (var row in results)
             {
-                builder.AppendLine(divider);
+                if (AddRowDivider)
+                {
+                    builder.AppendLine(divider);
+                }
                 builder.AppendLine(row);
             }
-
-            builder.AppendLine(divider);
-            builder.AppendLine("");
-            builder.AppendFormat(" Count: {0}", Rows.Count);
+            if (AddRowDivider)
+            {
+                builder.AppendLine(divider);
+            }
+            if (ShowCount)
+            {
+                builder.AppendLine("");
+                builder.AppendFormat(" Count: {0}", Rows.Count);
+            }
 
             return builder.ToString();
         }
