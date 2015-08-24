@@ -7,8 +7,12 @@ namespace ConsoleTables.Core
 {
     public class ConsoleTable
     {
-        public bool AddRowDivider = true;
+        public bool ShowRowDivider = true;
+        public bool ShowEndColumnDivider = true;
         public bool ShowCount = true;
+        public int MaxTableWidth = 80; // Dont do anything with this yet.
+        public bool ShowMiddleColumnDivider = true;
+
         public IList<object> Columns { get; protected set; }
         public IList<object[]> Rows { get; protected set; }
 
@@ -54,22 +58,60 @@ namespace ConsoleTables.Core
             return table;
         }
 
+        public void PrintToConsole()
+        {
+            Console.WriteLine(this.ToString());
+        }
+        public void PrintToConsoleColor(ConsoleColor ForeGround, ConsoleColor Background)
+        {
+            var oBG = Console.BackgroundColor;
+            var oFG = Console.ForegroundColor;
+            Console.ForegroundColor = ForeGround;
+            Console.BackgroundColor = Background;
+            Console.WriteLine(this.ToString());
+            Console.ForegroundColor = oFG;
+            Console.BackgroundColor = oBG;
+        }
+        public void PrintFirstLineColor(ConsoleColor Header)
+        {
+            var cls = this.ToString();
+            var lines = cls.Split('\n');
+            int count = 0;
+            ConsoleColor oFG = Console.ForegroundColor;
+            foreach (var s in lines)
+            {
+                if (count == 0)
+                {
+                    Console.ForegroundColor = Header;
+                    Console.WriteLine(s);
+                    Console.ForegroundColor = oFG;
+                    Console.ResetColor();
+                }
+                else
+                {
+                    Console.WriteLine(s);
+                }
+                count++;
+            }
+                
+        }
+
         public override string ToString()
         {
             var builder = new StringBuilder();
 
             // find the longest column by searching each row
-            var columnLengths = Columns
-                .Select((t, i) => Rows.Select(x => x[i])
-                    .Union(Columns)
-                    .Where(x => x != null)
-                    .Select(x => x.ToString().Length).Max())
-                    .ToList();
+            var columnLengths = Columns.Select(x => x.ToString().Length).ToList();
 
             // create the string format with padding
             var format = Enumerable.Range(0, Columns.Count)
-                .Select(i => " | {" + i + ", -" + columnLengths[i] + " }")
-                .Aggregate((s, a) => s + a) + " |";
+                .Select(i =>
+                    (i == 0 && !ShowEndColumnDivider ? "" : (!ShowMiddleColumnDivider ? " " : " | ")) + "{"
+                    + i 
+                    + ", -" 
+                    + columnLengths[i] 
+                    + " }")
+                    .Aggregate((s, a) => s + a) + (!ShowEndColumnDivider ? "" : " |" ) ;
 
             var results = new List<string>();
 
@@ -81,26 +123,26 @@ namespace ConsoleTables.Core
             var longestLine = Math.Max(maxRowLength, columnHeaders.Length);
             
             // add each row
-            Array.ForEach(Rows.Select(row => string.Format(format, row)).ToArray(), results.Add);
+            Array.ForEach(Rows.Select(row =>  string.Format(format, row)  ).ToArray(), results.Add);
 
             // create the divider
             var divider = " " + string.Join("", Enumerable.Repeat("-", longestLine - 1)) + " ";
 
-            if (AddRowDivider)
+            if (ShowRowDivider)
             {
                 builder.AppendLine(divider);
             }
-            builder.AppendLine(columnHeaders);
+            builder.AppendLine(columnHeaders.Substring(0, (columnHeaders.Length < MaxTableWidth ? columnHeaders.Length : MaxTableWidth)));
 
             foreach (var row in results)
             {
-                if (AddRowDivider)
+                if (ShowRowDivider)
                 {
                     builder.AppendLine(divider);
                 }
-                builder.AppendLine(row);
+                builder.AppendLine(row.Substring(0, (row.Length < MaxTableWidth ? row.Length : MaxTableWidth)));
             }
-            if (AddRowDivider)
+            if (ShowRowDivider)
             {
                 builder.AppendLine(divider);
             }
